@@ -774,24 +774,40 @@ let state = {
 
 function getImagemCategoria(categoria) {
   const cat = (categoria || '').toLowerCase();
+  
+  // 1. Processador (CPU)
   if (cat.includes('processador') || cat.includes('cpu') || cat.includes('intel') || cat.includes('amd'))
-    return 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=400&q=80';
+    return 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=400&q=80';
+    
+  // 2. Placa de Vídeo (GPU)
   if (cat.includes('placa') && (cat.includes('vídeo') || cat.includes('video') || cat.includes('gpu')))
-    return 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=400&q=80';
+    return 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&q=80';
+    
+  // 3. Memória RAM (CORRIGIDO)
   if (cat.includes('memória') || cat.includes('memoria') || cat.includes('ram'))
-    return 'https://images.unsplash.com/photo-1581091012184-7b4a3d4f8f1b?auto=format&fit=crop&w=400&q=80';
+    return 'https://images.unsplash.com/photo-1699796990049-3406a9991baa?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+    
+  // 4. Armazenamento (SSD / HD) (CORRIGIDO)
   if (cat.includes('armazenamento') || cat.includes('ssd') || cat.includes('hdd') || cat.includes('nvme'))
-    return 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=400&q=80';
+    return 'https://images.unsplash.com/photo-1721333091278-8b73e1f7392f?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+    
+  // 5. Placa Mãe (Motherboard)
   if (cat.includes('placa') && (cat.includes('mãe') || cat.includes('mae') || cat.includes('motherboard')))
-    return 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+    return 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80';
+    
+  // 6. Refrigeração (Fans / Watercooler) (CORRIGIDO)
   if (cat.includes('refrigeração') || cat.includes('refrigeracao') || cat.includes('cooler'))
-    return 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?auto=format&fit=crop&w=400&q=80';
+    return 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+    
+  // 7. Notebook / Laptop
   if (cat.includes('notebook') || cat.includes('laptop'))
     return 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=400&q=80';
+    
+  // 8. Gabinete / Setup Montado
   if (cat.includes('gabinete') || cat.includes('caixa'))
     return 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=400&q=80';
 
-  // Imagem genérica tecnológica para outras peças
+  // 9. Genérico (Placa de circuitos/Hardware)
   return 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80';
 }
 
@@ -907,7 +923,7 @@ function loadProducts(error = false) {
     
     let filtrados = state.produtos;
     if(cat) filtrados = filtrados.filter(p => p.categoria.includes(cat));
-    if(cond) filtrados = filtrados.filter(p => p.condicao.includes(cond));
+    if(cond) filtrados = filtrados.filter(p => p.condicao.startsWith(cond));
 
     if (filtrados.length === 0) {
       document.getElementById('products-area').innerHTML = `
@@ -1053,6 +1069,14 @@ function renderProduct(id) {
     return;
   }
   el.innerHTML = `
+    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; font-family: var(--font-head);">
+      <a onclick="navigate('home')" style="color: var(--green-main); cursor: pointer; text-decoration: none; font-weight: 700;">Início</a> 
+      <span style="margin: 0 6px;">&gt;</span> 
+      <span style="cursor: pointer; color: var(--text-muted);">${p.categoria}</span> 
+      <span style="margin: 0 6px;">&gt;</span> 
+      <span style="color: var(--text); font-weight: 700;">${p.nome}</span>
+    </div>
+    
     <div class="detail-grid">
       <div>
         <img src="${getImagemCategoria(p.categoria)}" class="thumb-main" alt="${p.nome}">
@@ -1385,7 +1409,7 @@ function renderCart() {
         </div>
         <a onclick="toast('A abrir página: Como funciona a Compra Segura?')" style="margin-left:26px; font-weight:700; color:var(--green-dark); text-decoration:underline; cursor:pointer;">Como funciona a Compra Segura?</a>
       </div>
-      <button class="btn-primary-c2c" onclick="finalizarCompra()">✅ Finalizar Compra Segura</button>
+      <button class="btn-primary-c2c" onclick="checkout(this)">✅ Finalizar Compra Segura</button>
     </div>`;
 }
 
@@ -1415,12 +1439,42 @@ function removeAd(id) {
   );
 }
 
-function finalizarCompra() {
-  if (!state.user) { toast('⚠️ Precisas de estar logado para finalizar.'); navigate('login'); return; }
-  const total = state.cart.reduce((a, i) => a + i.preco, 0);
-  toast(`✅ Compra finalizada! Total: R$ ${total.toFixed(2)}. Os vendedores serão notificados.`, 5000);
-  state.cart = [];
-  navigate('home');
+function checkout(btnElement) {
+  // 1. Validação de estado
+  if (!state.user) {
+    toast('⚠️ Precisas de iniciar sessão para comprar.');
+    navigate('login');
+    return;
+  }
+  
+  if (state.cart.length === 0) {
+    toast('⚠️ O teu carrinho está vazio.');
+    return;
+  }
+
+  // 2. Feedback Visual (Loading transacional)
+  btnElement.classList.add('btn-loading');
+
+  setTimeout(() => {
+    // 3. A LÓGICA DE REMOÇÃO: Guardar os IDs que estão no carrinho
+    const idsComprados = state.cart.map(item => item.id);
+    
+    // 4. Filtrar a lista de produtos (manter apenas os que NÃO foram comprados)
+    state.produtos = state.produtos.filter(p => !idsComprados.includes(p.id));
+    
+    // 5. Salvar a nova lista (sem os produtos comprados) no LocalStorage
+    localStorage.setItem('c2c_produtos', JSON.stringify(state.produtos));
+
+    // 6. Esvaziar o carrinho
+    state.cart = [];
+    
+    // 7. Fim do feedback, aviso e redirecionamento
+    btnElement.classList.remove('btn-loading');
+    toast('🎉 Compra Segura realizada com sucesso!', 4000);
+    
+    // Volta para a home (que vai recarregar a lista atualizada)
+    navigate('home');
+  }, 2000); // Simula 2 segundos de comunicação com o banco/pagamento
 }
 
 /* ================================================================
