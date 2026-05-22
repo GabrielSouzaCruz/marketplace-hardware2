@@ -26,7 +26,7 @@
       --bg:          #f4f4f9;
       --card-bg:     #ffffff;
       --text:        #1c1c1e;
-      --text-muted:  #6c757d;
+      --text-muted:  #4a4a4a;
       --border:      #e0e0e0;
       --shadow:      0 4px 24px rgba(0,0,0,.09);
       --radius:      12px;
@@ -36,6 +36,16 @@
 
     *, *::before, *::after { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; background: var(--bg); font-family: var(--font-head); color: var(--text); min-height: 100vh; }
+
+    /* ===== ACESSIBILIDADE: SCREEN READERS ===== */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
 
     /* ===== PAGES ===== */
     .page { display: none; min-height: 100vh; }
@@ -80,6 +90,17 @@
       text-decoration: none;
       white-space: nowrap;
       transition: background .2s, border-color .2s;
+    }
+    .error-msg {
+      color: var(--red);
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+      font-weight: 600;
+    }
+    .input-error {
+      border-color: var(--red) !important;
+      background-color: #ffebee;
     }
     .btn-nav:hover { background: rgba(255,255,255,.1); color: #fff; }
     .btn-nav.solid { background: var(--green-main); border-color: var(--green-main); }
@@ -413,7 +434,7 @@
 <body>
 
 <!-- ===== TOAST CONTAINER ===== -->
-<div class="toast-wrap" id="toastWrap"></div>
+<div class="toast-wrap" id="toastWrap" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ===== MODAL DE CONFIRMAÇÃO GLOBAL (DESTRUTIVO) ===== -->
 <div class="modal-overlay" id="dangerModal">
@@ -435,7 +456,7 @@
   <header class="navbar-c2c">
     <a class="navbar-brand-c2c" onclick="navigate('home')">🖥️ Hardware <span>C2C</span></a>
     <div class="navbar-actions">
-      <div class="cart-badge" onclick="navigate('cart')" title="Carrinho">
+      <div class="cart-badge" onclick="navigate('cart')" title="Carrinho" tabindex="0" aria-label="Carrinho de Compras" onkeydown="if(event.key==='Enter' || event.key===' ') { event.preventDefault(); navigate('cart'); }">
         🛒 <span class="badge" id="cart-count" style="display:none">0</span>
       </div>
       <span id="nav-seller-btn"></span>
@@ -443,12 +464,13 @@
     </div>
   </header>
 
-  <div class="hero-strip">
+  <main id="app-content">
+    <div class="hero-strip">
     <h1>Setup do dia</h1>
     <p>marketplace de hardware usado › compra segura › C2C</p>
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="searchInput" placeholder="Buscar: Ryzen, RTX, SSD..." autocomplete="off" />
+      <input type="text" class="search-input" id="mainSearch" placeholder="🔍 Buscar peças por marca, modelo..." oninput="loadProducts()" autocomplete="off" />
       <div class="suggestions-box" id="suggestionsBox"></div>
     </div>
   </div>
@@ -487,7 +509,7 @@
 
       <div style="flex: 1; min-width: 0;" id="products-area"></div>
     </div>
-  </div>
+  </main>
 </div>
 
 <!-- ============================================================ -->
@@ -500,25 +522,29 @@
       <h2 class="login-title">// acessar o setup</h2>
       <p class="login-sub">Marketplace de Hardware C2C</p>
 
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <div>
-          <label class="form-label-c2c" for="loginEmail">E-mail:</label>
-          <input type="email" class="form-input-c2c" id="loginEmail" placeholder="usuario@email.com" />
-        </div>
-        <div>
-          <label class="form-label-c2c" for="loginSenha">Senha:</label>
-          <input type="password" class="form-input-c2c" id="loginSenha" placeholder="••••••••" />
-        </div>
-        
-        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
-          <button class="btn-login" onclick="doLogin(this)">Fazer Login</button>
-          
-          <p style="text-align:center;margin:0;font-size:14px;color:var(--text-muted)">
-            Ainda não tens o teu setup? 
-            <a onclick="navigate('register')" style="color:var(--green-main);font-weight:700;cursor:pointer;text-decoration:underline">Cadastra-te aqui</a>
-          </p>
-        </div>
-      </div>
+      <form onsubmit="event.preventDefault(); doLogin(this.querySelector('button'));" style="display:flex;flex-direction:column;gap:14px">
+        <fieldset style="border:none; padding:0; margin:0;">
+          <legend class="sr-only">Autenticação de Utilizador</legend>
+          <div style="margin-bottom: 16px;">
+            <label class="form-label-c2c" for="loginEmail">E-mail:</label>
+            <input type="email" autocomplete="email" class="form-input-c2c" id="loginEmail" placeholder="utilizador@email.com" required />
+            <div id="error-email" class="error-msg">Por favor, insira um e-mail válido.</div>
+          </div>
+
+          <div style="margin-bottom: 24px;">
+            <label class="form-label-c2c" for="loginSenha">Senha:</label>
+            <input type="password" autocomplete="current-password" class="form-input-c2c" id="loginSenha" placeholder="••••••••" required />
+            <div id="error-senha" class="error-msg">Por favor, insira a sua senha.</div>
+          </div>
+
+          <button type="submit" class="btn-primary-c2c">Fazer Login</button>
+        </fieldset>
+      </form>
+
+      <p style="text-align:center;margin-top:16px;font-size:14px;color:var(--text-muted)">
+        Ainda não tens o teu setup? 
+        <a onclick="navigate('register')" style="color:var(--green-main);font-weight:700;cursor:pointer;text-decoration:underline">Cadastra-te aqui</a>
+      </p>
 
       <p style="text-align:center;margin-top:16px;font-size:14px">
         <a onclick="navigate('home')" style="color:var(--green-main);font-weight:700;cursor:pointer;text-decoration:none">← Voltar para a vitrine</a>
@@ -599,7 +625,7 @@
           </div>
           <div>
             <label class="form-label-c2c" for="ad-categoria">Categoria *</label>
-            <select class="form-input-c2c" id="ad-categoria">
+            <select class="form-input-c2c" id="ad-categoria" onchange="onCategoriaChange()">
               <option value="">Selecione...</option>
               <option>Notebook / Laptop</option><option>Processador (CPU)</option>
               <option>Placa de Vídeo (GPU)</option><option>Memória RAM</option>
@@ -818,20 +844,27 @@ function getAvatarURL(nome) {
 /* ================================================================
    ROUTING
 ================================================================ */
-function navigate(page, param) {
+function navigate(pageId, id = null, replace = false) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  state.currentPage = page;
+  document.getElementById(`page-${pageId}`).classList.add('active');
+  state.currentPage = pageId;
   window.scrollTo(0, 0);
 
-  if (page === 'home') renderHome();
-  if (page === 'login') { /* sem ação extra necessária */ }
-  if (page === 'register') { /* sem ação extra necessária */ }
-  if (page === 'product') renderProduct(param);
-  if (page === 'create') renderCreate();
-  if (page === 'chat') renderChat(param);
-  if (page === 'cart') renderCart();
-  if (page === 'profile') renderProfile();
+  if (pageId === 'home') renderHome();
+  if (pageId === 'login') { /* sem ação extra necessária */ }
+  if (pageId === 'register') { /* sem ação extra necessária */ }
+  if (pageId === 'product') renderProduct(id);
+  if (pageId === 'create') renderCreate();
+  if (pageId === 'chat') renderChat(id);
+  if (pageId === 'cart') renderCart();
+  if (pageId === 'profile') renderProfile();
+
+  const urlFragment = `#${pageId}${id ? '/' + id : ''}`;
+  if (replace) {
+    history.replaceState({ page: pageId, id: id }, '', urlFragment);
+  } else {
+    history.pushState({ page: pageId, id: id }, '', urlFragment);
+  }
 }
 
 /* ================================================================
@@ -862,6 +895,26 @@ function closeDangerModal() {
   document.getElementById('dangerModal').classList.remove('active');
   modalConfirmCallback = null;
 }
+
+/* ================================================================
+   ACESSIBILIDADE E TECLADO (MÓDULO 5)
+================================================================ */
+// Fechar modal com a tecla Escape
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    const dangerModal = document.getElementById('dangerModal');
+    if (dangerModal && dangerModal.classList.contains('active')) {
+      closeDangerModal();
+    }
+  }
+});
+
+// Suporte nativo para Voltar/Avançar no Browser (History API)
+window.addEventListener('popstate', (event) => {
+  if (event.state && event.state.page) {
+    navigate(event.state.page, event.state.id || null, true);
+  }
+});
 
 // Quando clica no botão vermelho do modal
 document.getElementById('modalConfirmBtn').addEventListener('click', () => {
@@ -920,10 +973,12 @@ function loadProducts(error = false) {
     // LÓGICA DE FILTRAGEM (Módulo 4)
     const cat = document.getElementById('filtroCategoria')?.value || '';
     const cond = document.getElementById('filtroCondicao')?.value || '';
+    const busca = document.getElementById('mainSearch')?.value.toLowerCase() || '';
     
     let filtrados = state.produtos;
-    if(cat) filtrados = filtrados.filter(p => p.categoria.includes(cat));
-    if(cond) filtrados = filtrados.filter(p => p.condicao.startsWith(cond));
+    if (cat) filtrados = filtrados.filter(p => p.categoria.includes(cat));
+    if (cond) filtrados = filtrados.filter(p => p.condicao.startsWith(cond));
+    if (busca) filtrados = filtrados.filter(p => p.nome.toLowerCase().includes(busca) || p.categoria.toLowerCase().includes(busca));
 
     if (filtrados.length === 0) {
       document.getElementById('products-area').innerHTML = `
@@ -957,10 +1012,10 @@ function simulateError() { loadProducts(true); }
    SEARCH
 ================================================================ */
 function setupSearch() {
-  const input = document.getElementById('searchInput');
+  const input = document.getElementById('mainSearch');
   const box = document.getElementById('suggestionsBox');
   if (!input) return;
-  input.oninput = () => {
+  input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
     if (q.length < 2) { box.classList.remove('open'); return; }
     const results = state.produtos.filter(p => p.nome.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q));
@@ -974,7 +1029,7 @@ function setupSearch() {
         </div>`).join('');
     }
     box.classList.add('open');
-  };
+  });
   document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) box.classList.remove('open'); });
 }
 
@@ -1013,16 +1068,45 @@ function doRegister() {
 }
 
 function doLogin(btnElement) {
-  const email = document.getElementById('loginEmail').value.trim();
-  const senha = document.getElementById('loginSenha').value;
-  
-  if (!email || !senha) { toast('⚠️ Preenche o e-mail e a senha.'); return; } 
+  const emailInput = document.getElementById('loginEmail');
+  const senhaInput = document.getElementById('loginSenha');
+  const emailError = document.getElementById('error-email');
+  const senhaError = document.getElementById('error-senha');
+  const email = emailInput.value.trim();
+  const senha = senhaInput.value;
+
+  // Reset dos erros inline
+  emailInput.classList.remove('input-error');
+  senhaInput.classList.remove('input-error');
+  emailError.style.display = 'none';
+  senhaError.style.display = 'none';
+
+  if (!email) {
+    emailInput.classList.add('input-error');
+    emailError.textContent = 'Por favor, insira um e-mail.';
+    emailError.style.display = 'block';
+    return;
+  }
+
+  if (!email.includes('@')) {
+    emailInput.classList.add('input-error');
+    emailError.textContent = 'Por favor, insira um e-mail válido.';
+    emailError.style.display = 'block';
+    return;
+  }
+
+  if (!senha) {
+    senhaInput.classList.add('input-error');
+    senhaError.textContent = 'Por favor, insira a sua senha.';
+    senhaError.style.display = 'block';
+    return;
+  }
 
   const user = state.registeredUsers.find(u => u.email === email);
   
   if (!user || user.senha !== senha) {
     toast('❌ E-mail ou senha incorretos. Tente novamente.');
-    document.getElementById('loginSenha').style.borderColor = "var(--red)";
+    senhaInput.classList.add('input-error');
     return;
   }
 
@@ -1068,11 +1152,14 @@ function renderProduct(id) {
     el.innerHTML = `<div style="text-align:center;padding:60px 24px"><div style="font-size:60px;margin-bottom:12px">🔍</div><h2 style="color:var(--red)">Ops! Peça não encontrada.</h2><p style="color:var(--text-muted);margin-bottom:24px">O anúncio pode ter sido removido ou vendido.</p><button class="btn-primary-c2c" style="max-width:200px;margin:0 auto" onclick="navigate('home')">← Voltar à Home</button></div>`;
     return;
   }
+  const conditionTag = p.condicao.includes('Novo')
+    ? `<span class="tag" style="background:#e8f5e9;color:#2e7d32;border:1px solid #2e7d32;"><span aria-hidden="true">🆕</span> Novo (Lacrado)</span>`
+    : `<span class="tag" style="background:#e3f2fd;color:#1565c0;border:1px solid #1565c0;"><span aria-hidden="true">♻️</span> ${p.condicao}</span>`;
   el.innerHTML = `
     <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; font-family: var(--font-head);">
       <a onclick="navigate('home')" style="color: var(--green-main); cursor: pointer; text-decoration: none; font-weight: 700;">Início</a> 
       <span style="margin: 0 6px;">&gt;</span> 
-      <span style="cursor: pointer; color: var(--text-muted);">${p.categoria}</span> 
+      <a onclick="document.getElementById('filtroCategoria').value='${p.categoria}'; navigate('home'); setTimeout(loadProducts,50);" style="cursor:pointer;color:var(--text-muted);text-decoration:none">${p.categoria}</a> 
       <span style="margin: 0 6px;">&gt;</span> 
       <span style="color: var(--text); font-weight: 700;">${p.nome}</span>
     </div>
@@ -1092,9 +1179,9 @@ function renderProduct(id) {
         <p style="margin:0;color:var(--text-muted);font-weight:600">${p.condicao}</p>
         <p class="detail-price">R$ ${p.preco.toFixed(2)}</p>
         <div class="detail-badge-row">
-          <span class="tag tag-green">✔️ Verificado</span>
-          <span class="tag tag-blue">🛡️ Testado</span>
-          <span class="tag tag-amber">📍 ${p.localizacao}</span>
+          ${conditionTag}
+          <span class="tag" style="background:#e8f5e9;color:#2e7d32;border:1px solid #2e7d32;"><span aria-hidden="true">🛡️</span> ${p.garantia} Garantia</span>
+          <span class="tag" style="background:#e3f2fd;color:#1565c0;border:1px solid #1565c0;"><span aria-hidden="true">📍</span> ${p.localizacao}</span>
         </div>
         <div class="seller-box">
           <p style="margin:0 0 3px">👤 Vendedor: <strong>${p.vendedor}</strong></p>
@@ -1185,21 +1272,42 @@ function showWizardStep(n) {
 
 function wizardNext(from) {
   if (from === 1) {
-    const t = document.getElementById('ad-titulo').value.trim();
-    const c = document.getElementById('ad-categoria').value;
-    const co = document.getElementById('ad-condicao').value;
-    if (!t) { toast('⚠️ Preenche o título.'); return; }
-    if (!c) { toast('⚠️ Seleciona uma categoria.'); return; }
-    if (!co) { toast('⚠️ Seleciona a condição.'); return; }
+    const t = document.getElementById('ad-titulo');
+    const c = document.getElementById('ad-categoria');
+    const co = document.getElementById('ad-condicao');
+
+    // Limpar erros anteriores
+    [t, c, co].forEach(el => el.classList.remove('input-error'));
+
+    let temErro = false;
+    if (!t.value.trim()) { t.classList.add('input-error'); temErro = true; }
+    if (!c.value) { c.classList.add('input-error'); temErro = true; }
+    if (!co.value) { co.classList.add('input-error'); temErro = true; }
+
+    if (temErro) {
+      toast('⚠️ Por favor, preenche os campos assinalados a vermelho.');
+      return;
+    }
   }
+
   if (from === 2) {
-    const m = document.getElementById('ad-marca').value;
-    const mo = document.getElementById('ad-modelo').value.trim();
-    if (!m) { toast('⚠️ Seleciona a marca.'); return; }
-    if (!mo) { toast('⚠️ Informa o modelo.'); return; }
+    const m = document.getElementById('ad-marca');
+    const mo = document.getElementById('ad-modelo');
+
+    [m, mo].forEach(el => el.classList.remove('input-error'));
+    let temErro = false;
+    if (!m.value) { m.classList.add('input-error'); temErro = true; }
+    if (!mo.value.trim()) { mo.classList.add('input-error'); temErro = true; }
+
+    if (temErro) {
+      toast('⚠️ Por favor, preenche os campos assinalados a vermelho.');
+      return;
+    }
+
     document.getElementById('wizard-summary-titulo').textContent = '📌 ' + (document.getElementById('ad-titulo').value || '—');
     document.getElementById('wizard-summary-cat').textContent = '🏷️ ' + (document.getElementById('ad-categoria').value || '—') + ' · ' + (document.getElementById('ad-condicao').value || '—');
   }
+
   showWizardStep(from + 1);
 }
 
@@ -1283,6 +1391,62 @@ function submitAd(btnElement) {
     if (btnElement) btnElement.classList.remove('btn-loading');
     navigate('home');
   }, 2000);
+}
+
+// Atualiza as opções de marca com base na categoria selecionada (Prevenção de Erro)
+function onCategoriaChange() {
+  const cat = (document.getElementById('ad-categoria')?.value || '').toLowerCase();
+  populateBrandsForCategory(cat);
+}
+
+function populateBrandsForCategory(cat) {
+  const select = document.getElementById('ad-marca');
+  if (!select) return;
+
+  const optionsMap = {
+    processador: ['AMD','Intel','Outro'],
+    'processador (cpu)': ['AMD','Intel','Outro'],
+    'placa de vídeo': ['NVIDIA','AMD','ASUS','Gigabyte/Aorus','MSI','Outro'],
+    'placa de vídeo (gpu)': ['NVIDIA','AMD','ASUS','Gigabyte/Aorus','MSI','Outro'],
+    'memória ram': ['Kingston','Corsair','G.Skill','Crucial','Outro'],
+    'armazenamento (ssd/hdd)': ['Samsung','Seagate','Kingston','Western Digital','Outro'],
+    'placa mãe': ['ASUS','Gigabyte/Aorus','MSI','Outro'],
+    'notebook / laptop': ['Dell','Lenovo','ASUS','Acer','Outro'],
+    'cooler / refrigeração': ['Noctua','Corsair','Cooler Master','Outro']
+  };
+
+  // Escolhe lista por correspondência simples; fallback para a lista completa original
+  let opts = select.querySelectorAll('option');
+  opts = Array.from(opts).map(o => o.value || o.textContent).filter(Boolean);
+
+  let list = null;
+  Object.keys(optionsMap).forEach(k => {
+    if (cat.includes(k)) list = optionsMap[k];
+  });
+
+  if (!list) {
+    // mantém a lista original se a categoria não for mapeada
+    return;
+  }
+
+  // Reconstrói as opções
+  select.innerHTML = '<option value="">Selecione...</option>' + list.map(v => `<option>${v}</option>`).join('');
+}
+
+// Torna 1elementos com onclick focáveis e operáveis por teclado (Acessibilidade)
+function enhanceAccessibility() {
+  // role-card e cart-badge
+  document.querySelectorAll('div.role-card[onclick], div.cart-badge[onclick]').forEach(el => {
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    if (!el.hasAttribute('aria-label')) {
+      const txt = (el.innerText || el.textContent || '').trim().split('\n')[0].trim();
+      if (txt) el.setAttribute('aria-label', txt);
+    }
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+    });
+  });
 }
 
 /* ================================================================
@@ -1560,7 +1724,8 @@ function renderProfile() {
 ================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   renderNavbar(); // Garante que os botões de perfil/entrar iniciem no estado correto
-  navigate('home');
+  enhanceAccessibility(); // Aumenta a acessibilidade de elementos interativos
+  navigate('home', null, true);
 });
 </script>
 </body>
